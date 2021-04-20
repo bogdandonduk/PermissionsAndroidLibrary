@@ -1,0 +1,3 @@
+include ':permissionsandroid'
+include ':app'
+rootProject.name = "PermissionsAndroidLibrary"
