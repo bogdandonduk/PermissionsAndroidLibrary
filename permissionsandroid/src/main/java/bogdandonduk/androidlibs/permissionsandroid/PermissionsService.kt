@@ -1,17 +1,26 @@
 package bogdandonduk.androidlibs.permissionsandroid
 
-import android.Manifest.permission.*
-import android.Manifest.permission_group.*
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.os.Environment
+import android.provider.Settings
+import android.util.Log
 
 object PermissionsService {
     private const val LIBRARY_PREFIX = "prefs_bogdandonduk.androidlibs.permissionsandroid"
 
-    private var instance: PermissionsService? = null
-
     private var sentToAppSettings = false
+
+    private const val STORAGE = "storage"
+    private const val READ_EXTERNAL_STORAGE = "read_external_storage_"
+    private const val WRITE_EXTERNAL_STORAGE = "write_external_storage"
+
+    private const val PACKAGE_SCHEME = "package"
 
     private val codesMap = mutableMapOf(
         STORAGE to 1,
@@ -19,25 +28,103 @@ object PermissionsService {
         WRITE_EXTERNAL_STORAGE to 12
     )
 
+    private const val DO_NOT_ASK_AGAIN_PREFIX = "DoNotAskAgain"
+    private const val delimiter = "_"
+
     private fun getPreferences(context: Context) =
         context.getSharedPreferences(LIBRARY_PREFIX + context.packageName, Context.MODE_PRIVATE)
 
-    fun checkStorageGroup(context: Context) : Boolean {
-        return if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            (context.checkSelfPermission(READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
-                    context.checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
-        } else true
+
+    fun checkStorage(activity: Activity) : Boolean =
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
+                    activity.checkSelfPermission(READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED && activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+                else
+                    Environment.isExternalStorageManager()
+            else true
+
+    private fun openAppSettings(activity: Activity) {
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts(PACKAGE_SCHEME, activity.packageName, null)
+
+            activity.startActivity(this)
+
+            sentToAppSettings = true
+        }
     }
 
-    fun checkStorageRead(context: Context) : Boolean {
-        return if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            (context.checkSelfPermission(READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
-        } else true
+    @SuppressLint("QueryPermissionsNeeded")
+    private fun openAppSettingsForManageStorage(activity: Activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).run {
+                data = Uri.fromParts(PACKAGE_SCHEME, activity.packageName, null)
+
+                activity.startActivity(this)
+            }
+
+            sentToAppSettings = true
+        }
     }
 
-    fun checkStorageWrite(context: Context) : Boolean {
-        return if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            (context.checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
-        } else true
+    @SuppressLint("QueryPermissionsNeeded")
+    fun requestStorage(activity: Activity, alreadyGrantedOrLessThanApi23Action: () -> Unit) {
+        if(!checkStorage(activity)) {
+
+        } else
+            alreadyGrantedOrLessThanApi23Action.invoke()
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                if(activity.checkSelfPermission(READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    if(activity.shouldShowRequestPermissionRationale(READ_EXTERNAL_STORAGE) || activity.shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE)) {
+                        // denied rationale
+                    } else if(
+                        getPreferences(activity).getBoolean(DO_NOT_ASK_AGAIN_PREFIX + delimiter + STORAGE, false)
+                    ) {
+                        // do not ask again rationale
+                    } else {
+                        activity.requestPermissions(arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE), codesMap[STORAGE]!!)
+                    }
+                } else
+                    alreadyGrantedOrLessThanApi23Action.invoke()
+            } else {
+                if(Environment.isExternalStorageManager()) {
+                    alreadyGrantedOrLessThanApi23Action.invoke()
+                } else {
+                    Log.d("TAG", "requestStorage: API 30 shines")
+                }
+            }
+        } else {
+            alreadyGrantedOrLessThanApi23Action.invoke()
+        }
     }
+
+    @SuppressLint("NewApi")
+    fun handleStorageRequestResult(activity: Activity, requestCode: Int, grantResults: IntArray, grantedAction: (() -> Unit)? = null, deniedAction: (() -> Unit)? = null) {
+        val granted = {
+            getPreferences(activity).edit().remove(DO_NOT_ASK_AGAIN_PREFIX + delimiter + STORAGE).apply()
+
+            grantedAction?.invoke()
+        }
+
+        val denied = {
+            if(!activity.shouldShowRequestPermissionRationale(READ_EXTERNAL_STORAGE) || !activity.shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE))
+                getPreferences(activity).edit().putBoolean(DO_NOT_ASK_AGAIN_PREFIX + delimiter + STORAGE, true).apply()
+
+            deniedAction?.invoke()
+        }
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
+                if(requestCode == codesMap[STORAGE])
+                    if(grantResults.size == 2 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED)
+                        granted.invoke()
+                    else
+                        denied.invoke()
+            else
+                if(Environment.isExternalStorageManager())
+                    granted.invoke()
+                else
+                    denied.invoke()
+        }
 }
