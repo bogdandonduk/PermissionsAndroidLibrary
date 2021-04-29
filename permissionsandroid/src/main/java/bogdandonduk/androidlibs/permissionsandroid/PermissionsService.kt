@@ -12,15 +12,12 @@ import android.provider.Settings
 import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.STORAGE
 import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.READ_EXTERNAL_STORAGE
 import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.WRITE_EXTERNAL_STORAGE
+import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.delimiter
 
 object PermissionsService {
-    private const val delimiter = "_"
-
     private const val LIBRARY_PREFIX = "prefs_bogdandonduk.androidlibs.permissionsandroid"
 
     private var sentToAppSettings = false
-
-
 
     private const val PACKAGE_SCHEME = "package"
 
