@@ -9,6 +9,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
+import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExternsionVocabulary.STORAGE
+import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExternsionVocabulary.READ_EXTERNAL_STORAGE
+import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExternsionVocabulary.WRITE_EXTERNAL_STORAGE
 
 object PermissionsService {
     private const val delimiter = "_"
@@ -17,9 +20,7 @@ object PermissionsService {
 
     private var sentToAppSettings = false
 
-    private const val STORAGE = "storage"
-    private const val READ_EXTERNAL_STORAGE = "read_external_storage_"
-    private const val WRITE_EXTERNAL_STORAGE = "write_external_storage"
+
 
     private const val PACKAGE_SCHEME = "package"
 
