@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
+import androidx.fragment.app.DialogFragment
 import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.STORAGE
 import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.READ_EXTERNAL_STORAGE
 import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.WRITE_EXTERNAL_STORAGE
@@ -49,6 +50,11 @@ object PermissionsService {
 
             sentToAppSettings = true
         }
+    }
+
+    fun closeOnDenial(modal: DialogFragment, activity: Activity? = null) {
+        modal.dismiss()
+        activity?.finish()
     }
 
     @SuppressLint("QueryPermissionsNeeded")
