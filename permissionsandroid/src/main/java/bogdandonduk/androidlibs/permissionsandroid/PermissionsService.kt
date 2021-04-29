@@ -42,7 +42,7 @@ object PermissionsService {
                     Environment.isExternalStorageManager()
             else true
 
-    private fun openAppSettings(activity: Activity) {
+    fun openAppSettings(activity: Activity) {
         Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
             data = Uri.fromParts(PACKAGE_SCHEME, activity.packageName, null)
 
@@ -58,7 +58,7 @@ object PermissionsService {
     }
 
     @SuppressLint("QueryPermissionsNeeded")
-    private fun openAppSettingsForManageStorage(activity: Activity) {
+    fun openAppSettingsForManageStorage(activity: Activity) {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).run {
                 data = Uri.fromParts(PACKAGE_SCHEME, activity.packageName, null)
