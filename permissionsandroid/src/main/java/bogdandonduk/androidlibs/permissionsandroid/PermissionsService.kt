@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
+import android.util.Log
 import androidx.fragment.app.DialogFragment
 import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.STORAGE
 import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.READ_EXTERNAL_STORAGE
@@ -79,16 +80,22 @@ object PermissionsService {
                         api30manageStoragePermissionRequestRationaleAction?.invoke()
                     else
                         alreadyGrantedOrLessThanApi23Action.invoke()
-                else
-                    if(activity.checkSelfPermission(READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+                else {
+                    Log.d("TAG", "requestStorage: PREENTER")
+                    if(activity.checkSelfPermission(READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                        Log.d("TAG", "requestStorage: SEMIENTER")
                         if(activity.shouldShowRequestPermissionRationale(READ_EXTERNAL_STORAGE) || activity.shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE))
                             deniedRationaleAction?.invoke()
                         else if(getPreferences(activity).getBoolean(DO_NOT_ASK_AGAIN_PREFIX + STORAGE, false))
                             doNotAskAgainRationaleAction?.invoke()
-                        else
+                        else {
+                            Log.d("TAG", "requestStorage: ENTER")
                             activity.requestPermissions(arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE), codesMap[STORAGE]!!)
+                        }
+                    }
                     else
                         alreadyGrantedOrLessThanApi23Action.invoke()
+                }
             else
                 alreadyGrantedOrLessThanApi23Action.invoke()
         else
