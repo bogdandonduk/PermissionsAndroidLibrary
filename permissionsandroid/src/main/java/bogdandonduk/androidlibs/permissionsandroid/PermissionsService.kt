@@ -134,4 +134,15 @@ object PermissionsService {
                         denied.invoke()
         }
     }
+
+    fun handleReturnFromAppSettings(activity: Activity, checkPermissionAction: (activity: Activity) -> Boolean, deniedAction: (() -> Unit)?, grantedAction: (() -> Unit)? = null) {
+        if(sentToAppSettings) {
+            sentToAppSettings = false
+
+            if(checkPermissionAction.invoke(activity))
+                grantedAction?.invoke()
+            else
+                deniedAction?.invoke()
+        }
+    }
 }
