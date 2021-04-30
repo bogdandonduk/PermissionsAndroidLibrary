@@ -80,22 +80,16 @@ object PermissionsService {
                         api30manageStoragePermissionRequestRationaleAction?.invoke()
                     else
                         alreadyGrantedOrLessThanApi23Action.invoke()
-                else {
-                    Log.d("TAG", "requestStorage: PREENTER")
-                    if(activity.checkSelfPermission(READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                        Log.d("TAG", "requestStorage: SEMIENTER")
+                else
+                    if(activity.checkSelfPermission(READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
                         if(activity.shouldShowRequestPermissionRationale(READ_EXTERNAL_STORAGE) || activity.shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE))
                             deniedRationaleAction?.invoke()
                         else if(getPreferences(activity).getBoolean(DO_NOT_ASK_AGAIN_PREFIX + STORAGE, false))
                             doNotAskAgainRationaleAction?.invoke()
-                        else {
-                            Log.d("TAG", "requestStorage: ENTER")
+                        else
                             activity.requestPermissions(arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE), codesMap[STORAGE]!!)
-                        }
-                    }
                     else
                         alreadyGrantedOrLessThanApi23Action.invoke()
-                }
             else
                 alreadyGrantedOrLessThanApi23Action.invoke()
         else
