@@ -8,6 +8,6 @@ object PermissionsNamesExtensionVocabulary {
     const val API_30_OR_HIGHER = "api_30_or_higher"
 
     const val STORAGE = "storage"
-    const val READ_EXTERNAL_STORAGE = "read_external_storage_"
+    const val READ_EXTERNAL_STORAGE = "read_external_storage"
     const val WRITE_EXTERNAL_STORAGE = "write_external_storage"
 }
