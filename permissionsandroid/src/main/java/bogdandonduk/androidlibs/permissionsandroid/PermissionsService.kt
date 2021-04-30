@@ -1,5 +1,6 @@
 package bogdandonduk.androidlibs.permissionsandroid
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
@@ -87,7 +88,7 @@ object PermissionsService {
                         else if(getPreferences(activity).getBoolean(DO_NOT_ASK_AGAIN_PREFIX + STORAGE, false))
                             doNotAskAgainRationaleAction?.invoke()
                         else
-                            activity.requestPermissions(arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE), codesMap[STORAGE]!!)
+                            activity.requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE), codesMap[STORAGE]!!)
                     else
                         alreadyGrantedOrLessThanApi23Action.invoke()
             else
@@ -98,30 +99,31 @@ object PermissionsService {
 
     @SuppressLint("NewApi")
     fun handleStorageRequestResult(activity: Activity, requestCode: Int, grantResults: IntArray, grantedAction: (() -> Unit)? = null, deniedAction: (() -> Unit)? = null) {
-        val granted = {
-            getPreferences(activity).edit().remove(DO_NOT_ASK_AGAIN_PREFIX + STORAGE).apply()
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val granted = {
+                getPreferences(activity).edit().remove(DO_NOT_ASK_AGAIN_PREFIX + STORAGE).apply()
 
-            grantedAction?.invoke()
-        }
+                grantedAction?.invoke()
+            }
 
-        val denied = {
-            if(!activity.shouldShowRequestPermissionRationale(READ_EXTERNAL_STORAGE) || !activity.shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE))
-                getPreferences(activity).edit().putBoolean(DO_NOT_ASK_AGAIN_PREFIX + STORAGE, true).apply()
+            val denied = {
+                if(!activity.shouldShowRequestPermissionRationale(READ_EXTERNAL_STORAGE) || !activity.shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE))
+                    getPreferences(activity).edit().putBoolean(DO_NOT_ASK_AGAIN_PREFIX + STORAGE, true).apply()
 
-            deniedAction?.invoke()
-        }
+                deniedAction?.invoke()
+            }
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                if(Environment.isExternalStorageManager())
+                    granted.invoke()
+                else
+                    denied.invoke()
+            else
                 if(requestCode == codesMap[STORAGE])
                     if(grantResults.size == 2 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED)
                         granted.invoke()
                     else
                         denied.invoke()
-            else
-                if(Environment.isExternalStorageManager())
-                    granted.invoke()
-                else
-                    denied.invoke()
         }
+    }
 }
