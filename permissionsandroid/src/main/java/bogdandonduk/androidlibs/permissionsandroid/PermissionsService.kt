@@ -238,7 +238,7 @@ object PermissionsService {
         return PermissionsSplitCollection(allowedPermissions, deniedPermissions)
     }
 
-    fun handleReturnFromAppSettings(activity: Activity, permissionsToCheck: MutableList<Pair<String, (() -> Boolean)?>>) =
+    fun handleReturnFromAppSettings(activity: Activity, vararg permissionsToCheck: PermissionCheckAction) =
         if(sentToAppSettings) {
             sentToAppSettings = false
 
@@ -246,10 +246,10 @@ object PermissionsService {
             val deniedPermissions = mutableListOf<String>()
 
             permissionsToCheck.forEach {
-                if((it.second != null && it.second!!.invoke()) || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && activity.checkSelfPermission(it.first) == PackageManager.PERMISSION_GRANTED))
-                    allowedPermissions.add(it.first)
+                if((it.specialCheckAction != null && it.specialCheckAction.invoke()) || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && activity.checkSelfPermission(it.permission) == PackageManager.PERMISSION_GRANTED))
+                    allowedPermissions.add(it.permission)
                 else
-                    deniedPermissions.add(it.first)
+                    deniedPermissions.add(it.permission)
             }
 
             PermissionsSplitCollection(allowedPermissions, deniedPermissions)
@@ -268,6 +268,8 @@ object PermissionsService {
     class RationalePermissionItem(val permission: String, var permissionRationaleTitle: String, var permissionRationaleMessage: String, @ColorInt var textColor: Int)
 
     class PermissionPostRequestAction(val permission: String, val action: () -> Unit)
+
+    class PermissionCheckAction(val permission: String, val specialCheckAction: (() -> Boolean)? = null)
 
     data class PermissionsSplitCollection(val allowedPermissions: MutableList<String>, val deniedPermissions: MutableList<String>)
 
