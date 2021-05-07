@@ -138,29 +138,50 @@ object PermissionsService {
                     !it.value
                 }.run {
                     if(isNotEmpty()) {
-                        val requestCode: Int = Random.nextInt(0, 100000)
+                        val requestCode: Int = Random.nextInt(0, 999)
                         var rationaleTag: String? = null
-                        var postActions: MutableList<PermissionPostRequestAction>? = null
+                        var postActions: MutableMap<String, PermissionPostRequestRationaleAction>? = null
 
                         val rationalePermissions = mutableListOf<String>()
                         val requestPermissions = mutableListOf<String>()
 
-                        forEach {
+                        forEach { it ->
                             if(activity.shouldShowRequestPermissionRationale(it.key) || getPreferences(activity).getBoolean(DO_NOT_ASK_AGAIN_PREFIX + it.key, false))
                                 rationalePermissions.add(it.key)
 
                             when(it.key) {
                                 MANAGE_EXTERNAL_STORAGE -> {
                                     if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                        postActions = mutableListOf()
+                                        if(postActions == null) postActions = mutableMapOf()
 
-                                        postActions!!.add(
-                                            PermissionPostRequestAction(
-                                                MANAGE_EXTERNAL_STORAGE
-                                            ) {
-                                                openAppSettingsForManageStorage(activity)
-                                            }
-                                        )
+                                        if(postActions!!.containsKey(MANAGE_EXTERNAL_STORAGE)) {
+                                            val manageStorageRationaleTag = "permissions_rationale-${Random.nextInt(1000, 1999)}"
+
+                                            postActions!![MANAGE_EXTERNAL_STORAGE] =
+                                                PermissionPostRequestRationaleAction(
+                                                    MANAGE_EXTERNAL_STORAGE,
+                                                    manageStorageRationaleTag,
+                                                ) {
+                                                    BottomSheetModalsService.startBuildingSimpleModal(manageStorageRationaleTag)
+                                                        .setBackgroundColor(rationaleModalBuildHelper.backgroundColor)
+                                                        .setTitle(TextItem(null, rationaleModalBuildHelper.title, rationaleModalBuildHelper.titleColor))
+                                                        .setTextItems(mutableListOf<TextItem>().apply {
+                                                            rationalePermissionItems.forEach {
+                                                                if(it.permission == MANAGE_EXTERNAL_STORAGE)
+                                                                    add(TextItem(null, it.permissionRationaleTitle + ": " + it.permissionRationaleMessage, it.textColor))
+                                                            }
+                                                        })
+                                                        .setPositiveButton(ButtonItem(rationaleModalBuildHelper.positiveButtonText, rationaleModalBuildHelper.positiveButtonTextColor) { _: View, bottomSheetDialogFragment: BottomSheetDialogFragment ->
+                                                            closeOnDenial(bottomSheetDialogFragment as DialogInterface)
+
+                                                            openAppSettingsForManageStorage(activity)
+                                                        })
+                                                        .setNegativeButton(ButtonItem(rationaleModalBuildHelper.negativeButtonText, rationaleModalBuildHelper.negativeButtonTextColor) { _: View, bottomSheetDialogFragment: BottomSheetDialogFragment ->
+                                                            closeOnDenial(bottomSheetDialogFragment as DialogInterface)
+                                                        })
+                                                        .show(fragmentManager = activity.supportFragmentManager)
+                                                }
+                                        }
                                     }
                                 }
                                 else -> {
@@ -267,11 +288,11 @@ object PermissionsService {
 
     class RationalePermissionItem(val permission: String, var permissionRationaleTitle: String, var permissionRationaleMessage: String, @ColorInt var textColor: Int)
 
-    class PermissionPostRequestAction(val permission: String, val action: () -> Unit)
+    class PermissionPostRequestRationaleAction(val permission: String, var rationaleTag: String? = null, val action: () -> Unit)
 
     class PermissionCheckAction(val permission: String, val specialCheckAction: (() -> Boolean)? = null)
 
     data class PermissionsSplitCollection(val allowedPermissions: MutableList<String>, val deniedPermissions: MutableList<String>)
 
-    class PermissionsRequestItem(val requestCode: Int, val possibleRationaleTag: String?, val possiblePostActionsForPermissions: MutableList<PermissionPostRequestAction>?)
+    class PermissionsRequestItem(val requestCode: Int?, val rationaleTag: String?, val postActionsForPermissionsMap: MutableMap<String, PermissionPostRequestRationaleAction>?)
 }
