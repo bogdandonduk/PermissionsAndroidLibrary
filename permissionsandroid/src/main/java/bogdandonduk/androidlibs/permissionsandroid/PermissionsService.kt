@@ -277,7 +277,7 @@ object PermissionsService {
         } else null
 
     class RationaleModalBuildHelper(
-        var backgroundColor: Int,
+        @ColorInt var backgroundColor: Int,
         var title: String,
         @ColorInt var titleColor: Int,
         var positiveButtonText: String,
