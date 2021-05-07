@@ -1,6 +1,5 @@
 package bogdandonduk.androidlibs.permissionsandroid
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
@@ -10,12 +9,19 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
-import android.util.Log
-import androidx.fragment.app.DialogFragment
-import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.STORAGE
-import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.READ_EXTERNAL_STORAGE
-import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.WRITE_EXTERNAL_STORAGE
+import android.Manifest.permission.*
+import android.Manifest.permission_group.*
+import android.content.DialogInterface
+import android.view.View
+import androidx.annotation.ColorInt
+import androidx.fragment.app.FragmentActivity
+import bogdandonduk.androidlibs.bottomsheetmodalsandroid.BottomSheetModalsService
+import bogdandonduk.androidlibs.bottomsheetmodalsandroid.anatomy.ButtonItem
+import bogdandonduk.androidlibs.bottomsheetmodalsandroid.anatomy.TextItem
 import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.delimiter
+import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.DO_NOT_ASK_AGAIN
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import kotlin.random.Random
 
 object PermissionsService {
     private const val LIBRARY_PREFIX = "prefs_bogdandonduk.androidlibs.permissionsandroid"
@@ -24,25 +30,74 @@ object PermissionsService {
 
     private const val PACKAGE_SCHEME = "package"
 
-    private val codesMap = mutableMapOf(
-        STORAGE to 1,
-        READ_EXTERNAL_STORAGE to 11,
-        WRITE_EXTERNAL_STORAGE to 12
-    )
-
-    private const val DO_NOT_ASK_AGAIN_PREFIX = LIBRARY_PREFIX + delimiter + "doNotAskAgain" + delimiter
+    private const val DO_NOT_ASK_AGAIN_PREFIX =
+        LIBRARY_PREFIX + delimiter + DO_NOT_ASK_AGAIN + delimiter
 
     private fun getPreferences(context: Context) =
-        context.getSharedPreferences(LIBRARY_PREFIX + context.packageName, Context.MODE_PRIVATE)
+        context.getSharedPreferences(
+            LIBRARY_PREFIX + delimiter + context.packageName,
+            Context.MODE_PRIVATE
+        )
 
+    @SuppressLint("InlinedApi")
+    fun checkPermissions(
+        activity: Activity,
+        cleanForApiLevel: Boolean = false,
+        vararg permissions: String
+    ): MutableMap<String, Boolean> {
+        val checkResultsMap = mutableMapOf<String, Boolean>()
 
-    fun checkStorage(activity: Activity) : Boolean =
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
-                    activity.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED && activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                else
-                    Environment.isExternalStorageManager()
-            else true
+        permissions.forEach {
+            when (it) {
+                STORAGE -> {
+                    checkResultsMap[READ_EXTERNAL_STORAGE] =
+                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                            activity.checkSelfPermission(READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+                        else true
+
+                    checkResultsMap[WRITE_EXTERNAL_STORAGE] =
+                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                            activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+                        else true
+                }
+
+                READ_EXTERNAL_STORAGE -> {
+                    checkResultsMap[READ_EXTERNAL_STORAGE] =
+                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                            activity.checkSelfPermission(READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+                        else true
+                }
+
+                WRITE_EXTERNAL_STORAGE -> {
+                    checkResultsMap[WRITE_EXTERNAL_STORAGE] =
+                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                            activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+                        else true
+                }
+
+                MANAGE_EXTERNAL_STORAGE -> {
+                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                        checkResultsMap[MANAGE_EXTERNAL_STORAGE] = Environment.isExternalStorageManager()
+                    else if(!cleanForApiLevel)
+                        checkResultsMap[MANAGE_EXTERNAL_STORAGE] = false
+                }
+
+                ACCEPT_HANDOVER -> {
+                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                        checkResultsMap[ACCEPT_HANDOVER] = activity.checkSelfPermission(ACCEPT_HANDOVER) == PackageManager.PERMISSION_GRANTED
+                    else if(!cleanForApiLevel)
+                        checkResultsMap[ACCEPT_HANDOVER] = false
+                }
+
+                else -> {
+                    checkResultsMap[it] =
+                        activity.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+                }
+            }
+        }
+
+        return checkResultsMap
+    }
 
     fun openAppSettings(activity: Activity) {
         Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -52,11 +107,6 @@ object PermissionsService {
 
             sentToAppSettings = true
         }
-    }
-
-    fun closeOnDenial(modal: DialogFragment, activity: Activity? = null) {
-        modal.dismiss()
-        activity?.finish()
     }
 
     @SuppressLint("QueryPermissionsNeeded")
@@ -72,77 +122,154 @@ object PermissionsService {
         }
     }
 
-    @SuppressLint("QueryPermissionsNeeded")
-    fun requestStorage(activity: Activity, deniedRationaleAction: (() -> Unit)?, doNotAskAgainRationaleAction: (() -> Unit)?, api30manageStoragePermissionRequestRationaleAction: (() -> Unit)?, alreadyGrantedOrLessThanApi23Action: () -> Unit) {
-        if(!checkStorage(activity))
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-                    if(!Environment.isExternalStorageManager())
-                        api30manageStoragePermissionRequestRationaleAction?.invoke()
-                    else
-                        alreadyGrantedOrLessThanApi23Action.invoke()
-                else
-                    if(activity.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
-                        if(activity.shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE) || activity.shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE))
-                            deniedRationaleAction?.invoke()
-                        else if(getPreferences(activity).getBoolean(DO_NOT_ASK_AGAIN_PREFIX + STORAGE, false))
-                            doNotAskAgainRationaleAction?.invoke()
-                        else
-                            activity.requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE), codesMap[STORAGE]!!)
-                    else
-                        alreadyGrantedOrLessThanApi23Action.invoke()
-            else
-                alreadyGrantedOrLessThanApi23Action.invoke()
-        else
-            alreadyGrantedOrLessThanApi23Action.invoke()
+    fun closeOnDenial(modal: DialogInterface, activity: Activity? = null) {
+        modal.dismiss()
+        activity?.finish()
     }
 
-    fun requestStorageUnwrapped(activity: Activity) {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-                openAppSettingsForManageStorage(activity)
-            else
-                activity.requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE), codesMap[STORAGE]!!)
-    }
-
-    @SuppressLint("NewApi")
-    fun handleStorageRequestResult(activity: Activity, requestCode: Int, grantResults: IntArray, grantedAction: (() -> Unit)? = null, deniedAction: (() -> Unit)? = null) {
+    fun requestPermissions(activity: FragmentActivity, rationaleModalBuildHelper: RationaleModalBuildHelper, vararg rationalePermissionItems: RationalePermissionItem) : PermissionsRequestItem? =
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val granted = {
-                getPreferences(activity).edit().remove(DO_NOT_ASK_AGAIN_PREFIX + STORAGE).apply()
+            checkPermissions(activity, cleanForApiLevel = true, permissions = mutableListOf<String>().apply{
+                rationalePermissionItems.forEach {
+                    add(it.permission)
+                }
+            }.toTypedArray())
+                .filter {
+                    !it.value
+                }.run {
+                    if(isNotEmpty()) {
+                        val requestCode: Int = Random.nextInt(0, 100000)
+                        var rationaleTag: String? = null
+                        var postActions: MutableList<PermissionPostRequestAction>? = null
 
-                grantedAction?.invoke()
+                        val rationalePermissions = mutableListOf<String>()
+                        val requestPermissions = mutableListOf<String>()
+
+                        forEach {
+                            if(activity.shouldShowRequestPermissionRationale(it.key) || getPreferences(activity).getBoolean(DO_NOT_ASK_AGAIN_PREFIX + it.key, false))
+                                rationalePermissions.add(it.key)
+
+                            when(it.key) {
+                                MANAGE_EXTERNAL_STORAGE -> {
+                                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                        postActions = mutableListOf()
+
+                                        postActions!!.add(
+                                            PermissionPostRequestAction(
+                                                MANAGE_EXTERNAL_STORAGE
+                                            ) {
+                                                openAppSettingsForManageStorage(activity)
+                                            }
+                                        )
+                                    }
+                                }
+                                else -> {
+                                    with(it.key) {
+                                        if(!requestPermissions.contains(this))
+                                            requestPermissions.add(this)
+                                    }
+                                }
+                            }
+                        }
+
+                        if(rationalePermissions.isNotEmpty()) {
+                            BottomSheetModalsService.startBuildingSimpleModal("permissions_rationale-$requestCode".apply { rationaleTag = this })
+                                .setBackgroundColor(rationaleModalBuildHelper.backgroundColor)
+                                .setTitle(TextItem(null, rationaleModalBuildHelper.title, rationaleModalBuildHelper.titleColor))
+                                .setTextItems(mutableListOf<TextItem>().apply {
+                                    rationalePermissionItems.forEach {
+                                        add(TextItem(null, it.permissionRationaleTitle + ": " + it.permissionRationaleMessage, it.textColor))
+                                    }
+                                })
+                                .setPositiveButton(ButtonItem(rationaleModalBuildHelper.positiveButtonText, rationaleModalBuildHelper.positiveButtonTextColor) { _: View, bottomSheetDialogFragment: BottomSheetDialogFragment ->
+                                    closeOnDenial(bottomSheetDialogFragment as DialogInterface)
+
+                                    activity.requestPermissions(
+                                        requestPermissions.toTypedArray(),
+                                        requestCode
+                                    )
+                                })
+                                .setNegativeButton(ButtonItem(rationaleModalBuildHelper.negativeButtonText, rationaleModalBuildHelper.negativeButtonTextColor) { _: View, bottomSheetDialogFragment: BottomSheetDialogFragment ->
+                                    closeOnDenial(bottomSheetDialogFragment as DialogInterface)
+                                })
+                                .show(fragmentManager = activity.supportFragmentManager)
+                        } else
+                            if(requestPermissions.isNotEmpty())
+                                activity.requestPermissions(
+                                    requestPermissions.toTypedArray(),
+                                    requestCode
+                                )
+
+                        PermissionsRequestItem(requestCode, rationaleTag, postActions)
+                    } else null
+                }
+        } else null
+
+    fun handlePermissionsRequestResult(
+        activity: Activity,
+        responseRequestCode: Int,
+        requestCode: Int,
+        grantResults: IntArray,
+        permissions: Array<String>
+    ) : PermissionsSplitCollection {
+        val allowedPermissions = mutableListOf<String>()
+        val deniedPermissions = mutableListOf<String>()
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && responseRequestCode == requestCode) {
+            permissions.forEachIndexed { i: Int, s: String ->
+                if(grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                    getPreferences(activity).edit().remove(DO_NOT_ASK_AGAIN_PREFIX + s).apply()
+
+                    allowedPermissions.add(s)
+                } else {
+                    if(!activity.shouldShowRequestPermissionRationale(READ_EXTERNAL_STORAGE))
+                        getPreferences(activity).edit().putBoolean(DO_NOT_ASK_AGAIN_PREFIX + s, true).apply()
+
+                    deniedPermissions.add(s)
+                }
+
             }
-
-            val denied = {
-                if(!activity.shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE) || !activity.shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE))
-                    getPreferences(activity).edit().putBoolean(DO_NOT_ASK_AGAIN_PREFIX + STORAGE, true).apply()
-
-                deniedAction?.invoke()
+        } else {
+            permissions.forEach {
+                allowedPermissions.add(it)
             }
-
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-                if(Environment.isExternalStorageManager())
-                    granted.invoke()
-                else
-                    denied.invoke()
-            else
-                if(requestCode == codesMap[STORAGE])
-                    if(grantResults.size == 2 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED)
-                        granted.invoke()
-                    else
-                        denied.invoke()
         }
+
+        return PermissionsSplitCollection(allowedPermissions, deniedPermissions)
     }
 
-    fun handleReturnFromAppSettings(activity: Activity, checkPermissionAction: (activity: Activity) -> Boolean, deniedAction: (() -> Unit)?, grantedAction: (() -> Unit)? = null) {
+    fun handleReturnFromAppSettings(activity: Activity, permissionsToCheck: MutableList<Pair<String, (() -> Boolean)?>>) =
         if(sentToAppSettings) {
             sentToAppSettings = false
 
-            if(checkPermissionAction.invoke(activity))
-                grantedAction?.invoke()
-            else
-                deniedAction?.invoke()
-        }
-    }
+            val allowedPermissions = mutableListOf<String>()
+            val deniedPermissions = mutableListOf<String>()
+
+            permissionsToCheck.forEach {
+                if((it.second != null && it.second!!.invoke()) || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && activity.checkSelfPermission(it.first) == PackageManager.PERMISSION_GRANTED))
+                    allowedPermissions.add(it.first)
+                else
+                    deniedPermissions.add(it.first)
+            }
+
+            PermissionsSplitCollection(allowedPermissions, deniedPermissions)
+        } else null
+
+    class RationaleModalBuildHelper(
+        var backgroundColor: Int,
+        var title: String,
+        @ColorInt var titleColor: Int,
+        var positiveButtonText: String,
+        @ColorInt var positiveButtonTextColor: Int,
+        var negativeButtonText: String,
+        @ColorInt var negativeButtonTextColor: Int = positiveButtonTextColor
+    )
+
+    class RationalePermissionItem(val permission: String, var permissionRationaleTitle: String, var permissionRationaleMessage: String, @ColorInt var textColor: Int)
+
+    class PermissionPostRequestAction(val permission: String, val action: () -> Unit)
+
+    data class PermissionsSplitCollection(val allowedPermissions: MutableList<String>, val deniedPermissions: MutableList<String>)
+
+    class PermissionsRequestItem(val requestCode: Int, val possibleRationaleTag: String?, val possiblePostActionsForPermissions: MutableList<PermissionPostRequestAction>?)
 }
