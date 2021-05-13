@@ -7,20 +7,12 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.provider.Settings
 import android.Manifest.permission.*
-import android.Manifest.permission_group.*
 import android.content.DialogInterface
-import android.view.View
 import androidx.annotation.ColorInt
-import androidx.fragment.app.FragmentActivity
-import bogdandonduk.androidlibs.bottomsheetmodalsandroid.BottomSheetModalsService
-import bogdandonduk.androidlibs.bottomsheetmodalsandroid.anatomy.ButtonItem
-import bogdandonduk.androidlibs.bottomsheetmodalsandroid.anatomy.TextItem
 import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.delimiter
 import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.DO_NOT_ASK_AGAIN
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlin.random.Random
 
 object PermissionsService {
@@ -39,65 +31,65 @@ object PermissionsService {
             Context.MODE_PRIVATE
         )
 
-    @SuppressLint("InlinedApi")
-    fun checkPermissions(
-        activity: Activity,
-        cleanForApiLevel: Boolean = false,
-        vararg permissions: String
-    ): MutableMap<String, Boolean> {
-        val checkResultsMap = mutableMapOf<String, Boolean>()
-
-        permissions.forEach {
-            when (it) {
-                STORAGE -> {
-                    checkResultsMap[READ_EXTERNAL_STORAGE] =
-                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-                            activity.checkSelfPermission(READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                        else true
-
-                    checkResultsMap[WRITE_EXTERNAL_STORAGE] =
-                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-                            activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                        else true
-                }
-
-                READ_EXTERNAL_STORAGE -> {
-                    checkResultsMap[READ_EXTERNAL_STORAGE] =
-                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-                            activity.checkSelfPermission(READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                        else true
-                }
-
-                WRITE_EXTERNAL_STORAGE -> {
-                    checkResultsMap[WRITE_EXTERNAL_STORAGE] =
-                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-                            activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                        else true
-                }
-
-                MANAGE_EXTERNAL_STORAGE -> {
-                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-                        checkResultsMap[MANAGE_EXTERNAL_STORAGE] = Environment.isExternalStorageManager()
-                    else if(!cleanForApiLevel)
-                        checkResultsMap[MANAGE_EXTERNAL_STORAGE] = false
-                }
-
-                ACCEPT_HANDOVER -> {
-                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-                        checkResultsMap[ACCEPT_HANDOVER] = activity.checkSelfPermission(ACCEPT_HANDOVER) == PackageManager.PERMISSION_GRANTED
-                    else if(!cleanForApiLevel)
-                        checkResultsMap[ACCEPT_HANDOVER] = false
-                }
-
-                else -> {
-                    checkResultsMap[it] =
-                        activity.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
-                }
-            }
-        }
-
-        return checkResultsMap
-    }
+//    @SuppressLint("InlinedApi")
+//    fun checkPermissions(
+//        activity: Activity,
+//        cleanForApiLevel: Boolean = false,
+//        vararg permissions: String
+//    ): MutableMap<String, Boolean> {
+//        val checkResultsMap = mutableMapOf<String, Boolean>()
+//
+//        permissions.forEach {
+//            when (it) {
+//                STORAGE -> {
+//                    checkResultsMap[READ_EXTERNAL_STORAGE] =
+//                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+//                            activity.checkSelfPermission(READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+//                        else true
+//
+//                    checkResultsMap[WRITE_EXTERNAL_STORAGE] =
+//                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+//                            activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+//                        else true
+//                }
+//
+//                READ_EXTERNAL_STORAGE -> {
+//                    checkResultsMap[READ_EXTERNAL_STORAGE] =
+//                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+//                            activity.checkSelfPermission(READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+//                        else true
+//                }
+//
+//                WRITE_EXTERNAL_STORAGE -> {
+//                    checkResultsMap[WRITE_EXTERNAL_STORAGE] =
+//                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+//                            activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+//                        else true
+//                }
+//
+//                MANAGE_EXTERNAL_STORAGE -> {
+//                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+//                        checkResultsMap[MANAGE_EXTERNAL_STORAGE] = Environment.isExternalStorageManager()
+//                    else if(!cleanForApiLevel)
+//                        checkResultsMap[MANAGE_EXTERNAL_STORAGE] = false
+//                }
+//
+//                ACCEPT_HANDOVER -> {
+//                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+//                        checkResultsMap[ACCEPT_HANDOVER] = activity.checkSelfPermission(ACCEPT_HANDOVER) == PackageManager.PERMISSION_GRANTED
+//                    else if(!cleanForApiLevel)
+//                        checkResultsMap[ACCEPT_HANDOVER] = false
+//                }
+//
+//                else -> {
+//                    checkResultsMap[it] =
+//                        activity.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+//                }
+//            }
+//        }
+//
+//        return checkResultsMap
+//    }
 
     fun openAppSettings(activity: Activity) {
         Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -127,104 +119,162 @@ object PermissionsService {
         activity?.finish()
     }
 
-    fun requestPermissions(activity: FragmentActivity, rationaleModalBuildHelper: RationaleModalBuildHelper, vararg rationalePermissionItems: RationalePermissionItem) : PermissionsRequestItem? =
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            checkPermissions(activity, cleanForApiLevel = true, permissions = mutableListOf<String>().apply{
-                rationalePermissionItems.forEach {
-                    add(it.permission)
-                }
-            }.toTypedArray())
-                .filter {
-                    !it.value
-                }.run {
-                    if(isNotEmpty()) {
-                        val requestCode: Int = Random.nextInt(0, 999)
-                        var rationaleTag: String? = null
-                        var postActions: MutableMap<String, PermissionPostRequestRationaleAction>? = null
+    fun requestManageStorage(
+        activity: Activity,
+        deniedRationaleAction: (requestManageStoragePermissionAction: () -> Unit) -> Unit,
+        doNotAskAgainRationaleAction: (requestManageStoragePermissionAction: () -> Unit) -> Unit = deniedRationaleAction,
+        api30Action: (requestManageStoragePermissionAction: () -> Unit) -> Unit,
+        allowedAction: () -> Unit
+    ) : Int? {
+        return if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val requestCode = Random.nextInt(0, 999)
 
-                        val rationalePermissions = mutableListOf<String>()
-                        val requestPermissions = mutableListOf<String>()
-
-                        forEach { it ->
-                            if(activity.shouldShowRequestPermissionRationale(it.key) || getPreferences(activity).getBoolean(DO_NOT_ASK_AGAIN_PREFIX + it.key, false))
-                                rationalePermissions.add(it.key)
-
-                            when(it.key) {
-                                MANAGE_EXTERNAL_STORAGE -> {
-                                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                        if(postActions == null) postActions = mutableMapOf()
-
-                                        if(postActions!!.containsKey(MANAGE_EXTERNAL_STORAGE)) {
-                                            val manageStorageRationaleTag = "permissions_rationale-${Random.nextInt(1000, 1999)}"
-
-                                            postActions!![MANAGE_EXTERNAL_STORAGE] =
-                                                PermissionPostRequestRationaleAction(
-                                                    MANAGE_EXTERNAL_STORAGE,
-                                                    manageStorageRationaleTag,
-                                                ) {
-                                                    BottomSheetModalsService.startBuildingSimpleModal(manageStorageRationaleTag)
-                                                        .setBackgroundColor(rationaleModalBuildHelper.backgroundColor)
-                                                        .setTitle(TextItem(null, rationaleModalBuildHelper.title, rationaleModalBuildHelper.titleColor))
-                                                        .setTextItems(mutableListOf<TextItem>().apply {
-                                                            rationalePermissionItems.forEach {
-                                                                if(it.permission == MANAGE_EXTERNAL_STORAGE)
-                                                                    add(TextItem(null, it.permissionRationaleTitle + ": " + it.permissionRationaleMessage, it.textColor))
-                                                            }
-                                                        })
-                                                        .setPositiveButton(ButtonItem(rationaleModalBuildHelper.positiveButtonText, rationaleModalBuildHelper.positiveButtonTextColor) { _: View, bottomSheetDialogFragment: BottomSheetDialogFragment ->
-                                                            closeOnDenial(bottomSheetDialogFragment as DialogInterface)
-
-                                                            openAppSettingsForManageStorage(activity)
-                                                        })
-                                                        .setNegativeButton(ButtonItem(rationaleModalBuildHelper.negativeButtonText, rationaleModalBuildHelper.negativeButtonTextColor) { _: View, bottomSheetDialogFragment: BottomSheetDialogFragment ->
-                                                            closeOnDenial(bottomSheetDialogFragment as DialogInterface)
-                                                        })
-                                                        .show(fragmentManager = activity.supportFragmentManager)
-                                                }
-                                        }
-                                    }
-                                }
-                                else -> {
-                                    with(it.key) {
-                                        if(!requestPermissions.contains(this))
-                                            requestPermissions.add(this)
-                                    }
-                                }
-                            }
+            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                if(activity.checkSelfPermission(READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+                    if(activity.shouldShowRequestPermissionRationale(READ_EXTERNAL_STORAGE) || activity.shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE)) {
+                        deniedRationaleAction.invoke {
+                            activity.requestPermissions(arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE), requestCode)
                         }
 
-                        if(rationalePermissions.isNotEmpty()) {
-                            BottomSheetModalsService.startBuildingSimpleModal("permissions_rationale-$requestCode".apply { rationaleTag = this })
-                                .setBackgroundColor(rationaleModalBuildHelper.backgroundColor)
-                                .setTitle(TextItem(null, rationaleModalBuildHelper.title, rationaleModalBuildHelper.titleColor))
-                                .setTextItems(mutableListOf<TextItem>().apply {
-                                    rationalePermissionItems.forEach {
-                                        add(TextItem(null, it.permissionRationaleTitle + ": " + it.permissionRationaleMessage, it.textColor))
-                                    }
-                                })
-                                .setPositiveButton(ButtonItem(rationaleModalBuildHelper.positiveButtonText, rationaleModalBuildHelper.positiveButtonTextColor) { _: View, bottomSheetDialogFragment: BottomSheetDialogFragment ->
-                                    closeOnDenial(bottomSheetDialogFragment as DialogInterface)
+                        null
+                    } else if(isDoNotAskAgainFlagged(activity, READ_EXTERNAL_STORAGE) || isDoNotAskAgainFlagged(activity, WRITE_EXTERNAL_STORAGE)) {
+                        doNotAskAgainRationaleAction.invoke {
+                            activity.requestPermissions(arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE), requestCode)
+                        }
 
-                                    activity.requestPermissions(
-                                        requestPermissions.toTypedArray(),
-                                        requestCode
-                                    )
-                                })
-                                .setNegativeButton(ButtonItem(rationaleModalBuildHelper.negativeButtonText, rationaleModalBuildHelper.negativeButtonTextColor) { _: View, bottomSheetDialogFragment: BottomSheetDialogFragment ->
-                                    closeOnDenial(bottomSheetDialogFragment as DialogInterface)
-                                })
-                                .show(fragmentManager = activity.supportFragmentManager)
-                        } else
-                            if(requestPermissions.isNotEmpty())
-                                activity.requestPermissions(
-                                    requestPermissions.toTypedArray(),
-                                    requestCode
-                                )
+                        null
+                    } else {
+                        activity.requestPermissions(arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE), requestCode)
 
-                        PermissionsRequestItem(requestCode, rationaleTag, postActions)
-                    } else null
+                        requestCode
+                    }
+                else {
+                    allowedAction.invoke()
+
+                    null
                 }
-        } else null
+            } else {
+                api30Action.invoke {
+                    openAppSettingsForManageStorage(activity)
+                }
+
+                null
+            }
+        } else {
+            allowedAction.invoke()
+
+            null
+        }
+    }
+
+//    fun requestPermissions(activity: FragmentActivity, rationaleModalBuildHelper: RationaleModalBuildHelper, vararg rationalePermissionItems: RationalePermissionItem) : PermissionsRequestItem? =
+//        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//            checkPermissions(activity, cleanForApiLevel = true, permissions = mutableListOf<String>().apply{
+//                rationalePermissionItems.forEach {
+//                    add(it.permission)
+//                }
+//            }.toTypedArray())
+//                .filter {
+//                    !it.value
+//                }.run {
+//                    if(isNotEmpty()) {
+//                        val requestCode: Int = Random.nextInt(0, 999)
+//                        var rationaleTag: String? = null
+//                        var postActions: MutableMap<String, PermissionPostRequestRationaleAction>? = null
+//
+//                        val rationalePermissions = mutableListOf<String>()
+//                        val requestPermissions = mutableListOf<String>()
+//
+//                        forEach { it ->
+//                            if(activity.shouldShowRequestPermissionRationale(it.key) || getPreferences(activity).getBoolean(DO_NOT_ASK_AGAIN_PREFIX + it.key, false))
+//                                rationalePermissions.add(it.key)
+//
+//                            when(it.key) {
+//                                MANAGE_EXTERNAL_STORAGE -> {
+//                                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+//                                        if(postActions == null) postActions = mutableMapOf()
+//
+//                                        if(postActions!!.containsKey(MANAGE_EXTERNAL_STORAGE)) {
+//                                            val manageStorageRationaleTag = "permissions_rationale-${Random.nextInt(1000, 1999)}"
+//
+//                                            postActions!![MANAGE_EXTERNAL_STORAGE] =
+//                                                PermissionPostRequestRationaleAction(
+//                                                    MANAGE_EXTERNAL_STORAGE,
+//                                                    manageStorageRationaleTag,
+//                                                ) {
+//                                                    BottomSheetModalsService.startBuildingSimpleModal(manageStorageRationaleTag)
+//                                                        .setBackgroundColor(rationaleModalBuildHelper.backgroundColor)
+//                                                        .setTitle(TextItem(null, rationaleModalBuildHelper.title, rationaleModalBuildHelper.titleColor))
+//                                                        .setTextItems(mutableListOf<TextItem>().apply {
+//                                                            rationalePermissionItems.forEach {
+//                                                                if(it.permission == MANAGE_EXTERNAL_STORAGE)
+//                                                                    add(TextItem(null, it.permissionRationaleTitle + ": " + it.permissionRationaleMessage, it.textColor))
+//                                                            }
+//                                                        })
+//                                                        .setPositiveButton(ButtonItem(rationaleModalBuildHelper.positiveButtonText, rationaleModalBuildHelper.positiveButtonTextColor) { _: View, bottomSheetDialogFragment: BottomSheetDialogFragment ->
+//                                                            closeOnDenial(bottomSheetDialogFragment as DialogInterface)
+//
+//                                                            openAppSettingsForManageStorage(activity)
+//                                                        })
+//                                                        .setNegativeButton(ButtonItem(rationaleModalBuildHelper.negativeButtonText, rationaleModalBuildHelper.negativeButtonTextColor) { _: View, bottomSheetDialogFragment: BottomSheetDialogFragment ->
+//                                                            closeOnDenial(bottomSheetDialogFragment as DialogInterface)
+//                                                        })
+//                                                        .show(fragmentManager = activity.supportFragmentManager)
+//                                                }
+//                                        }
+//                                    }
+//                                }
+//                                else -> {
+//                                    with(it.key) {
+//                                        if(!requestPermissions.contains(this))
+//                                            requestPermissions.add(this)
+//                                    }
+//                                }
+//                            }
+//                        }
+//
+//                        if(rationalePermissions.isNotEmpty()) {
+//                            BottomSheetModalsService.startBuildingSimpleModal("permissions_rationale-$requestCode".apply { rationaleTag = this })
+//                                .setBackgroundColor(rationaleModalBuildHelper.backgroundColor)
+//                                .setTitle(TextItem(null, rationaleModalBuildHelper.title, rationaleModalBuildHelper.titleColor))
+//                                .setTextItems(mutableListOf<TextItem>().apply {
+//                                    rationalePermissionItems.forEach {
+//                                        add(TextItem(null, it.permissionRationaleTitle + ": " + it.permissionRationaleMessage, it.textColor))
+//                                    }
+//                                })
+//                                .setPositiveButton(ButtonItem(rationaleModalBuildHelper.positiveButtonText, rationaleModalBuildHelper.positiveButtonTextColor) { _: View, bottomSheetDialogFragment: BottomSheetDialogFragment ->
+//                                    closeOnDenial(bottomSheetDialogFragment as DialogInterface)
+//
+//                                    activity.requestPermissions(
+//                                        requestPermissions.toTypedArray(),
+//                                        requestCode
+//                                    )
+//                                })
+//                                .setNegativeButton(ButtonItem(rationaleModalBuildHelper.negativeButtonText, rationaleModalBuildHelper.negativeButtonTextColor) { _: View, bottomSheetDialogFragment: BottomSheetDialogFragment ->
+//                                    closeOnDenial(bottomSheetDialogFragment as DialogInterface)
+//                                })
+//                                .show(fragmentManager = activity.supportFragmentManager)
+//                        } else
+//                            if(requestPermissions.isNotEmpty())
+//                                activity.requestPermissions(
+//                                    requestPermissions.toTypedArray(),
+//                                    requestCode
+//                                )
+//
+//                        PermissionsRequestItem(requestCode, rationaleTag, postActions)
+//                    } else null
+//                }
+//        } else null
+
+    fun isDoNotAskAgainFlagged(context: Context, permission: String) = getPreferences(context).getBoolean(DO_NOT_ASK_AGAIN_PREFIX + permission, false)
+
+    fun saveDoNotAskAgaiFlagged(context: Context, permission: String) {
+        getPreferences(context).edit().putBoolean(DO_NOT_ASK_AGAIN_PREFIX + permission, true).apply()
+    }
+
+    fun clearDoNotAskAgainFlagged(context: Context, permission: String) {
+        getPreferences(context).edit().remove(DO_NOT_ASK_AGAIN_PREFIX + permission).apply()
+    }
 
     fun handlePermissionsRequestResult(
         activity: Activity,
@@ -239,12 +289,12 @@ object PermissionsService {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && responseRequestCode == requestCode) {
             permissions.forEachIndexed { i: Int, s: String ->
                 if(grantResults[i] == PackageManager.PERMISSION_GRANTED) {
-                    getPreferences(activity).edit().remove(DO_NOT_ASK_AGAIN_PREFIX + s).apply()
+                    clearDoNotAskAgainFlagged(activity, s)
 
                     allowedPermissions.add(s)
                 } else {
                     if(!activity.shouldShowRequestPermissionRationale(READ_EXTERNAL_STORAGE))
-                        getPreferences(activity).edit().putBoolean(DO_NOT_ASK_AGAIN_PREFIX + s, true).apply()
+                        saveDoNotAskAgaiFlagged(activity, s)
 
                     deniedPermissions.add(s)
                 }
