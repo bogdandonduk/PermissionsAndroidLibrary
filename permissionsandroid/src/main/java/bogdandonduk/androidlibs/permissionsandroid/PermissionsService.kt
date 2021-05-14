@@ -139,7 +139,7 @@ object PermissionsService {
                         null
                     } else if(isDoNotAskAgainFlagged(activity, READ_EXTERNAL_STORAGE) || isDoNotAskAgainFlagged(activity, WRITE_EXTERNAL_STORAGE)) {
                         doNotAskAgainRationaleAction.invoke {
-                            activity.requestPermissions(arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE), requestCode)
+                            openAppSettings(activity)
                         }
 
                         null
