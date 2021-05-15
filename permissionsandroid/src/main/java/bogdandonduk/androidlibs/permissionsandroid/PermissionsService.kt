@@ -119,14 +119,51 @@ object PermissionsService {
         activity?.finish()
     }
 
+    fun checkManageStorage() =
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val requestCode = Random.nextInt(0, 999)
+
+            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                if(activity.checkSelfPermission(READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+                    if(activity.shouldShowRequestPermissionRationale(READ_EXTERNAL_STORAGE) || activity.shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE)) {
+                        deniedRationaleAction.invoke {
+                            activity.requestPermissions(arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE), requestCode)
+                        }
+
+                        null
+                    } else if(isDoNotAskAgainFlagged(activity, READ_EXTERNAL_STORAGE) || isDoNotAskAgainFlagged(activity, WRITE_EXTERNAL_STORAGE)) {
+                        doNotAskAgainRationaleAction.invoke {
+                            openAppSettings(activity)
+                        }
+
+                        null
+                    } else {
+                        activity.requestPermissions(arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE), requestCode)
+
+                        requestCode
+                    }
+                else {
+                    allowedAction.invoke()
+
+                    null
+                }
+            } else {
+                api30Action.invoke {
+                    openAppSettingsForManageStorage(activity)
+                }
+
+                null
+            }
+        } else true
+
     fun requestManageStorage(
         activity: Activity,
         deniedRationaleAction: (requestManageStoragePermissionAction: () -> Unit) -> Unit,
         doNotAskAgainRationaleAction: (requestManageStoragePermissionAction: () -> Unit) -> Unit = deniedRationaleAction,
         api30Action: (requestManageStoragePermissionAction: () -> Unit) -> Unit,
         allowedAction: () -> Unit
-    ) : Int? {
-        return if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    ) : Int? =
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val requestCode = Random.nextInt(0, 999)
 
             if(Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
@@ -165,7 +202,6 @@ object PermissionsService {
 
             null
         }
-    }
 
 //    fun requestPermissions(activity: FragmentActivity, rationaleModalBuildHelper: RationaleModalBuildHelper, vararg rationalePermissionItems: RationalePermissionItem) : PermissionsRequestItem? =
 //        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -281,7 +317,7 @@ object PermissionsService {
         responseRequestCode: Int,
         requestCode: Int,
         grantResults: IntArray,
-        permissions: Array<String>
+        permissions: Array<out String>
     ) : PermissionsSplitCollection {
         val allowedPermissions = mutableListOf<String>()
         val deniedPermissions = mutableListOf<String>()
@@ -326,23 +362,23 @@ object PermissionsService {
             PermissionsSplitCollection(allowedPermissions, deniedPermissions)
         } else null
 
-    class RationaleModalBuildHelper(
-        @ColorInt var backgroundColor: Int,
-        var title: String,
-        @ColorInt var titleColor: Int,
-        var positiveButtonText: String,
-        @ColorInt var positiveButtonTextColor: Int,
-        var negativeButtonText: String,
-        @ColorInt var negativeButtonTextColor: Int = positiveButtonTextColor
-    )
-
-    class RationalePermissionItem(val permission: String, var permissionRationaleTitle: String, var permissionRationaleMessage: String, @ColorInt var textColor: Int)
-
-    class PermissionPostRequestRationaleAction(val permission: String, var rationaleTag: String? = null, val action: () -> Unit)
-
+//    class RationaleModalBuildHelper(
+//        @ColorInt var backgroundColor: Int,
+//        var title: String,
+//        @ColorInt var titleColor: Int,
+//        var positiveButtonText: String,
+//        @ColorInt var positiveButtonTextColor: Int,
+//        var negativeButtonText: String,
+//        @ColorInt var negativeButtonTextColor: Int = positiveButtonTextColor
+//    )
+//
+//    class RationalePermissionItem(val permission: String, var permissionRationaleTitle: String, var permissionRationaleMessage: String, @ColorInt var textColor: Int)
+//
+//    class PermissionPostRequestRationaleAction(val permission: String, var rationaleTag: String? = null, val action: () -> Unit)
+//
     class PermissionCheckAction(val permission: String, val specialCheckAction: (() -> Boolean)? = null)
 
     data class PermissionsSplitCollection(val allowedPermissions: MutableList<String>, val deniedPermissions: MutableList<String>)
-
-    class PermissionsRequestItem(val requestCode: Int?, val rationaleTag: String?, val postActionsForPermissionsMap: MutableMap<String, PermissionPostRequestRationaleAction>?)
+//
+//    class PermissionsRequestItem(val requestCode: Int?, val rationaleTag: String?, val postActionsForPermissionsMap: MutableMap<String, PermissionPostRequestRationaleAction>?)
 }
