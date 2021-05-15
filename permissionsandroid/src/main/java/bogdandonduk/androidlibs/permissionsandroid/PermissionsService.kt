@@ -10,6 +10,7 @@ import android.os.Build
 import android.provider.Settings
 import android.Manifest.permission.*
 import android.content.DialogInterface
+import android.os.Environment
 import androidx.annotation.ColorInt
 import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.delimiter
 import bogdandonduk.androidlibs.permissionsandroid.PermissionsNamesExtensionVocabulary.DO_NOT_ASK_AGAIN
@@ -119,42 +120,13 @@ object PermissionsService {
         activity?.finish()
     }
 
-    fun checkManageStorage() =
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val requestCode = Random.nextInt(0, 999)
-
-            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-                if(activity.checkSelfPermission(READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
-                    if(activity.shouldShowRequestPermissionRationale(READ_EXTERNAL_STORAGE) || activity.shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE)) {
-                        deniedRationaleAction.invoke {
-                            activity.requestPermissions(arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE), requestCode)
-                        }
-
-                        null
-                    } else if(isDoNotAskAgainFlagged(activity, READ_EXTERNAL_STORAGE) || isDoNotAskAgainFlagged(activity, WRITE_EXTERNAL_STORAGE)) {
-                        doNotAskAgainRationaleAction.invoke {
-                            openAppSettings(activity)
-                        }
-
-                        null
-                    } else {
-                        activity.requestPermissions(arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE), requestCode)
-
-                        requestCode
-                    }
-                else {
-                    allowedAction.invoke()
-
-                    null
-                }
-            } else {
-                api30Action.invoke {
-                    openAppSettingsForManageStorage(activity)
-                }
-
-                null
-            }
-        } else true
+    fun checkManageStorage(activity: Activity) =
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
+                activity.checkSelfPermission(READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED && activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+            else
+                Environment.isExternalStorageManager()
+        else true
 
     fun requestManageStorage(
         activity: Activity,
