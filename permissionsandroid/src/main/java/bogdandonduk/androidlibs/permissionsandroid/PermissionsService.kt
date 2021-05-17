@@ -297,25 +297,24 @@ object PermissionsService {
         val allowedPermissions = mutableListOf<String>()
         val deniedPermissions = mutableListOf<String>()
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && responseRequestCode == requestCode) {
-            permissions.forEachIndexed { i: Int, s: String ->
-                if(grantResults[i] == PackageManager.PERMISSION_GRANTED) {
-                    clearDoNotAskAgainFlagged(activity, s)
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            if(responseRequestCode == requestCode)
+                permissions.forEachIndexed { i: Int, s: String ->
+                    if(grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                        clearDoNotAskAgainFlagged(activity, s)
 
-                    allowedPermissions.add(s)
-                } else {
-                    if(!activity.shouldShowRequestPermissionRationale(READ_EXTERNAL_STORAGE))
-                        saveDoNotAskAgaiFlagged(activity, s)
+                        allowedPermissions.add(s)
+                    } else {
+                        if(!activity.shouldShowRequestPermissionRationale(s))
+                            saveDoNotAskAgaiFlagged(activity, s)
 
-                    deniedPermissions.add(s)
+                        deniedPermissions.add(s)
+                    }
                 }
-
-            }
-        } else {
+        else
             permissions.forEach {
                 allowedPermissions.add(it)
             }
-        }
 
         return PermissionsSplitCollection(allowedPermissions, deniedPermissions)
     }
