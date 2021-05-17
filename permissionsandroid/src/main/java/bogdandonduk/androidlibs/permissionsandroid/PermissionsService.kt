@@ -130,8 +130,12 @@ object PermissionsService {
 
     fun requestManageStorage(
         activity: Activity,
-        deniedRationaleAction: (requestManageStoragePermissionAction: () -> Unit) -> Unit,
-        doNotAskAgainRationaleAction: (requestManageStoragePermissionAction: () -> Unit) -> Unit = deniedRationaleAction,
+        deniedRationaleAction: (requestManageStoragePermissionAction: () -> Unit) -> Int,
+        doNotAskAgainRationaleAction: (requestManageStoragePermissionAction: () -> Unit) -> Unit = {
+            deniedRationaleAction.invoke {
+                openAppSettings(activity)
+            }
+        },
         api30Action: (requestManageStoragePermissionAction: () -> Unit) -> Unit,
         allowedAction: () -> Unit
     ) : Int? =
