@@ -1,5 +1,6 @@
 package bogdandonduk.androidlibs.permissionsandroid
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
@@ -317,6 +318,23 @@ object PermissionsService {
         }
 
         return PermissionsSplitCollection(allowedPermissions, deniedPermissions)
+    }
+
+    fun handleReturnFromAppSettingsForManageStorage(activity: Activity, allowedAction: () -> Unit, deniedAction: () -> Unit) {
+        if(sentToAppSettings) {
+            sentToAppSettings = false
+
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                if((Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) ||
+                    Build.VERSION.SDK_INT < Build.VERSION_CODES.R &&
+                    (activity.checkSelfPermission(READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED && activity.checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
+                )
+                    allowedAction.invoke()
+                else
+                    deniedAction.invoke()
+            else
+                allowedAction.invoke()
+        }
     }
 
     fun handleReturnFromAppSettings(activity: Activity, vararg permissionsToCheck: PermissionCheckAction) =
