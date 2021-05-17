@@ -320,7 +320,7 @@ object PermissionsService {
         return PermissionsSplitCollection(allowedPermissions, deniedPermissions)
     }
 
-    fun handleReturnFromAppSettingsForManageStorage(activity: Activity, allowedAction: () -> Unit, deniedAction: () -> Unit) {
+    fun handleReturnFromAppSettingsForManageStorage(activity: Activity, deniedAction: () -> Unit, allowedAction: () -> Unit) {
         if(sentToAppSettings) {
             sentToAppSettings = false
 
