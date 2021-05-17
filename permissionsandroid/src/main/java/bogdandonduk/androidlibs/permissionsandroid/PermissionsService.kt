@@ -130,12 +130,8 @@ object PermissionsService {
 
     fun requestManageStorage(
         activity: Activity,
-        deniedRationaleAction: (requestManageStoragePermissionAction: () -> Unit) -> Int,
-        doNotAskAgainRationaleAction: (requestManageStoragePermissionAction: () -> Unit) -> Unit = {
-            deniedRationaleAction.invoke {
-                openAppSettings(activity)
-            }
-        },
+        deniedRationaleAction: (requestManageStoragePermissionAction: () -> Int) -> Unit,
+        doNotAskAgainRationaleAction: (requestManageStoragePermissionAction: () -> Unit) -> Unit,
         api30Action: (requestManageStoragePermissionAction: () -> Unit) -> Unit,
         allowedAction: () -> Unit
     ) : Int? =
@@ -147,6 +143,8 @@ object PermissionsService {
                     if(activity.shouldShowRequestPermissionRationale(READ_EXTERNAL_STORAGE) || activity.shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE)) {
                         deniedRationaleAction.invoke {
                             activity.requestPermissions(arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE), requestCode)
+
+                            requestCode
                         }
 
                         null
