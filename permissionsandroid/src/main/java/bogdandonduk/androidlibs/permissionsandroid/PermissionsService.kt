@@ -20,7 +20,7 @@ import kotlin.random.Random
 object PermissionsService {
     private const val LIBRARY_PREFIX = "prefs_bogdandonduk.androidlibs.permissionsandroid"
 
-    private var sentToAppSettings = false
+    var sentToAppSettings = false
 
     private const val PACKAGE_SCHEME = "package"
 
@@ -116,11 +116,6 @@ object PermissionsService {
         }
     }
 
-    fun closeOnDenial(modal: DialogInterface, activity: Activity? = null) {
-        modal.dismiss()
-        activity?.finish()
-    }
-
     fun checkManageStorage(activity: Activity) =
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
             if(Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
@@ -129,11 +124,11 @@ object PermissionsService {
                 Environment.isExternalStorageManager()
         else true
 
-    fun requestManageStorage(
+    inline fun requestManageStorage(
         activity: Activity,
-        deniedRationaleAction: (requestManageStoragePermissionAction: () -> Int) -> Unit,
-        doNotAskAgainRationaleAction: (requestManageStoragePermissionAction: () -> Unit) -> Unit,
-        api30Action: (requestManageStoragePermissionAction: () -> Unit) -> Unit,
+        deniedRationaleAction: (requestManageStoragePermissionAction: () -> Int?) -> Unit,
+        doNotAskAgainRationaleAction: (requestManageStoragePermissionAction: () -> Int?) -> Unit,
+        api30Action: (requestManageStoragePermissionAction: () -> Int?) -> Unit,
         allowedAction: () -> Unit
     ) : Int? =
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -152,6 +147,8 @@ object PermissionsService {
                     } else if(isDoNotAskAgainFlagged(activity, READ_EXTERNAL_STORAGE) || isDoNotAskAgainFlagged(activity, WRITE_EXTERNAL_STORAGE)) {
                         doNotAskAgainRationaleAction.invoke {
                             openAppSettings(activity)
+
+                            null
                         }
 
                         null
@@ -168,6 +165,8 @@ object PermissionsService {
             } else {
                 api30Action.invoke {
                     openAppSettingsForManageStorage(activity)
+
+                    null
                 }
 
                 null
@@ -294,6 +293,7 @@ object PermissionsService {
         grantResults: IntArray,
         permissions: Array<out String>
     ) : PermissionsSplitCollection {
+
         val allowedPermissions = mutableListOf<String>()
         val deniedPermissions = mutableListOf<String>()
 
@@ -319,7 +319,7 @@ object PermissionsService {
         return PermissionsSplitCollection(allowedPermissions, deniedPermissions)
     }
 
-    fun handleReturnFromAppSettingsForManageStorage(activity: Activity, deniedAction: () -> Unit, allowedAction: () -> Unit) {
+    inline fun handleReturnFromAppSettingsForManageStorage(activity: Activity, deniedAction: () -> Unit, allowedAction: () -> Unit) {
         if(sentToAppSettings) {
             sentToAppSettings = false
 
